@@ -76,8 +76,10 @@ select{padding:0 14px} .icobtn{width:46px;display:grid;place-items:center}
 .qbox svg{color:var(--muted);flex:none}
 .find{height:58px;padding:0 30px;border:none;border-radius:16px;background:var(--accent);color:#fff;font-size:17px;font-weight:700;display:flex;align-items:center;gap:10px}
 .find:hover{filter:brightness(1.08)}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;align-items:center}
-.chip{padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;border:1px solid var(--line);background:transparent;color:var(--muted);transition:all .16s}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;align-items:center}
+.platwrap,.typewrap,.chipwrap{display:inline-flex}
+.chip{display:inline-flex;align-items:center;line-height:1;padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;border:1px solid var(--line);background:transparent;color:var(--muted);transition:all .16s;white-space:nowrap}
+.clbl{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-right:2px}
 .chipwrap input:checked + .chip{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 12%,transparent);color:var(--accent)}
 /* results */
 .reshd{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:40px 0 18px}
@@ -243,9 +245,9 @@ def render(profile, sort="views", msg=""):
             f'<div class="sgroup"><span class="slabel">Хэштеги</span>{tg}</div>'
             f'<div class="sgroup"><span class="slabel">Фразы</span>{ph}</div></div>')
 
-    # выбор количества роликов за раз
-    for v, lbl in [("10", "10 видео"), ("20", "20"), ("30", "30"), ("50", "50")]:
-        chips += _radio("n", v, "30", "chip", lbl, "chipwrap")
+    # выбор количества роликов за раз (отдельная строка)
+    countchips = "".join(_radio("n", v, "30", "chip", lbl, "chipwrap")
+                         for v, lbl in [("10", "10 видео"), ("20", "20"), ("30", "30"), ("50", "50")])
 
     # панель ключей + остаток
     tok = apify_tok()
@@ -353,6 +355,7 @@ def render(profile, sort="views", msg=""):
      <button class="find" type="submit">{_svg(IC["search"],22,2)}Найти</button>
    </div>
    <div class="chips">{chips}</div>
+   <div class="chips" style="margin-top:12px"><span class="clbl">Кол-во</span>{countchips}</div>
    {sugg}
  </form>
  {body_results}

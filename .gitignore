@@ -1,0 +1,34 @@
+# виртуальные окружения
+**/.venv/
+.venv/
+tools/pdfenv/
+
+# python
+__pycache__/
+*.pyc
+
+# локальные данные и медиа (не в git)
+data/
+out/
+refs_downloads/
+flowbatch/out/
+flowbatch/screenshots/
+*.mp4
+*_preview.png
+_*.png
+*.db
+
+# секреты
+.env
+*.token
+.$*.bkp
+
+# внешняя зависимость (отдельный репозиторий github.com/aylinice/flowbatch)
+flowbatch/
+
+# мусор и промежуточные выгрузки
+.DS_Store
+*.csv
+refs_tiktok.json
+*.dtmp
+prompts_pasted*.txt

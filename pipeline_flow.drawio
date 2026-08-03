@@ -1,0 +1,205 @@
+<mxfile host="Electron">
+  <diagram id="pipeline-flow" name="Конвейер ИИ-видео">
+    <mxGraphModel dx="1156" dy="1185" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2600" pageHeight="1520" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;fontColor=#333333;" value="Конвейер ИИ-видео — от идеи до публикации" vertex="1">
+          <mxGeometry height="34" width="780" x="40" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="b1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;container=1;collapsible=0;verticalAlign=top;fontSize=16;fontStyle=1;spacingTop=6;arcSize=5;fillColor=#FFD966;strokeColor=#BF9000;fontColor=#5C4400;" value="1 · Подготовка / сценарий" vertex="1">
+          <mxGeometry height="300" width="780" x="40" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d1" parent="b1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#BF9000;fontSize=13;fontStyle=1;fontColor=#5C4400;" value="Есть референс?" vertex="1">
+          <mxGeometry height="66" width="180" x="300" y="44" as="geometry" />
+        </mxCell>
+        <mxCell id="n1" parent="b1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#BF9000;fontSize=13;fontColor=#5C4400;arcSize=12;" value="Ищешь референс" vertex="1">
+          <mxGeometry height="56" width="290" x="60" y="152" as="geometry" />
+        </mxCell>
+        <mxCell id="y1" parent="b1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#BF9000;fontSize=13;fontColor=#5C4400;arcSize=12;" value="Описываешь, разбиваешь на кадры, пишешь диалоги" vertex="1">
+          <mxGeometry height="56" width="290" x="430" y="152" as="geometry" />
+        </mxCell>
+        <mxCell id="out1" parent="b1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#A9D18E;strokeColor=#548235;fontColor=#1E4620;fontSize=13;fontStyle=1;arcSize=12;" value="Сценарий по сценам с диалогами" vertex="1">
+          <mxGeometry height="46" width="320" x="230" y="244" as="geometry" />
+        </mxCell>
+        <mxCell id="e_d_n" edge="1" parent="b1" source="d1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#9A7400;fontSize=11;fontColor=#5C4400;" target="n1" value="Нет">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_d_y" edge="1" parent="b1" source="d1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#9A7400;fontSize=11;fontColor=#5C4400;" target="y1" value="Да">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_n_m" edge="1" parent="b1" source="n1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#9A7400;" target="out1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_y_m" edge="1" parent="b1" source="y1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeColor=#9A7400;" target="out1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="b2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;container=1;collapsible=0;verticalAlign=top;fontSize=16;fontStyle=1;spacingTop=6;arcSize=5;fillColor=#6FA8DC;strokeColor=#1155CC;fontColor=#0B2A66;" value="2 · Изображение" vertex="1">
+          <mxGeometry height="212" width="780" x="40" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="c2a" parent="b2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1155CC;fontSize=13;fontColor=#0B2A66;arcSize=12;" value="Генерация кадров всех сцен" vertex="1">
+          <mxGeometry height="42" width="700" x="40" y="46" as="geometry" />
+        </mxCell>
+        <mxCell id="c2b" parent="b2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1155CC;fontSize=13;fontColor=#0B2A66;arcSize=12;" value="Готовые кадры — референсами к следующим" vertex="1">
+          <mxGeometry height="42" width="700" x="40" y="96" as="geometry" />
+        </mxCell>
+        <mxCell id="out2" parent="b2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#A9D18E;strokeColor=#548235;fontColor=#1E4620;fontSize=13;fontStyle=1;arcSize=12;" value="Кадры всех сцен" vertex="1">
+          <mxGeometry height="46" width="320" x="230" y="152" as="geometry" />
+        </mxCell>
+        <mxCell id="b3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;container=1;collapsible=0;verticalAlign=top;fontSize=16;fontStyle=1;spacingTop=6;arcSize=5;fillColor=#B57EDC;strokeColor=#6A1B9A;fontColor=#3B0A5E;" value="3 · Анимация" vertex="1">
+          <mxGeometry height="212" width="780" x="40" y="652" as="geometry" />
+        </mxCell>
+        <mxCell id="c3a" parent="b3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6A1B9A;fontSize=13;fontColor=#3B0A5E;arcSize=12;" value="Промты анимации" vertex="1">
+          <mxGeometry height="42" width="700" x="40" y="46" as="geometry" />
+        </mxCell>
+        <mxCell id="c3b" parent="b3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6A1B9A;fontSize=13;fontColor=#3B0A5E;arcSize=12;" value="Анимация кадров" vertex="1">
+          <mxGeometry height="42" width="700" x="40" y="96" as="geometry" />
+        </mxCell>
+        <mxCell id="out3" parent="b3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#A9D18E;strokeColor=#548235;fontColor=#1E4620;fontSize=13;fontStyle=1;arcSize=12;" value="Озвученные видео-клипы" vertex="1">
+          <mxGeometry height="46" width="320" x="230" y="152" as="geometry" />
+        </mxCell>
+        <mxCell id="b4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;container=1;collapsible=0;verticalAlign=top;fontSize=16;fontStyle=1;spacingTop=6;arcSize=5;fillColor=#F0952A;strokeColor=#B45309;fontColor=#5C2A00;" value="4 · Монтаж" vertex="1">
+          <mxGeometry height="290" width="780" x="40" y="904" as="geometry" />
+        </mxCell>
+        <mxCell id="c4a" parent="b4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B45309;fontSize=13;fontColor=#5C2A00;arcSize=12;" value="Убрать паузы между репликами" vertex="1">
+          <mxGeometry height="38" width="700" x="40" y="46" as="geometry" />
+        </mxCell>
+        <mxCell id="c4b" parent="b4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B45309;fontSize=13;fontColor=#5C2A00;arcSize=12;" value="Субтитры по 1–2 слова" vertex="1">
+          <mxGeometry height="38" width="700" x="40" y="92" as="geometry" />
+        </mxCell>
+        <mxCell id="c4c" parent="b4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B45309;fontSize=13;fontColor=#5C2A00;arcSize=12;" value="Музыка (в соцсети)" vertex="1">
+          <mxGeometry height="38" width="700" x="40" y="138" as="geometry" />
+        </mxCell>
+        <mxCell id="c4d" parent="b4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B45309;fontSize=13;fontColor=#5C2A00;arcSize=12;" value="Обложка" vertex="1">
+          <mxGeometry height="38" width="700" x="40" y="184" as="geometry" />
+        </mxCell>
+        <mxCell id="out4" parent="b4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#A9D18E;strokeColor=#548235;fontColor=#1E4620;fontSize=13;fontStyle=1;arcSize=12;" value="Готовый ролик" vertex="1">
+          <mxGeometry height="46" width="320" x="230" y="232" as="geometry" />
+        </mxCell>
+        <mxCell id="b5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;container=1;collapsible=0;verticalAlign=top;fontSize=16;fontStyle=1;spacingTop=6;arcSize=5;fillColor=#E06666;strokeColor=#990000;fontColor=#FFFFFF;" value="5 · Публикация" vertex="1">
+          <mxGeometry height="212" width="780" x="40" y="1240" as="geometry" />
+        </mxCell>
+        <mxCell id="c5a" parent="b5" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#990000;fontSize=13;fontColor=#7A1010;arcSize=12;" value="Выкладка во все соцсети" vertex="1">
+          <mxGeometry height="42" width="700" x="40" y="46" as="geometry" />
+        </mxCell>
+        <mxCell id="c5b" parent="b5" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#990000;fontSize=13;fontColor=#7A1010;arcSize=12;" value="Описание, музыка, обложка" vertex="1">
+          <mxGeometry height="42" width="700" x="40" y="96" as="geometry" />
+        </mxCell>
+        <mxCell id="out5" parent="b5" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#A9D18E;strokeColor=#548235;fontColor=#1E4620;fontSize=13;fontStyle=1;arcSize=12;" value="Ролик опубликован" vertex="1">
+          <mxGeometry height="46" width="320" x="230" y="152" as="geometry" />
+        </mxCell>
+        <mxCell id="eb12" edge="1" parent="1" source="b1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeWidth=2;strokeColor=#555555;" target="b2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eb23" edge="1" parent="1" source="b2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeWidth=2;strokeColor=#555555;" target="b3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eb34" edge="1" parent="1" source="b3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeWidth=2;strokeColor=#555555;" target="b4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eb45" edge="1" parent="1" source="b4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeWidth=2;strokeColor=#555555;" target="b5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="varRef" parent="1" style="rounded=1;whiteSpace=wrap;html=1;container=1;collapsible=0;verticalAlign=top;fontSize=14;fontStyle=1;spacingTop=6;arcSize=3;dashed=1;fillColor=#FAFAFA;strokeColor=#999999;fontColor=#333333;" value="Блок 1 · Поиск референса — варианты  (цвет = стоимость, см. «Обозначения»)" vertex="1">
+          <mxGeometry height="400" width="1180" x="950" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="h_hand" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;arcSize=8;fillColor=#E8E8E8;strokeColor=#888888;fontColor=#333333;" value="РУКАМИ · сам смотришь" vertex="1">
+          <mxGeometry height="28" width="250" x="20" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="h_api" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;arcSize=8;fillColor=#E8E8E8;strokeColor=#888888;fontColor=#333333;" value="API / авто" vertex="1">
+          <mxGeometry height="28" width="250" x="300" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="h_own" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;arcSize=8;fillColor=#E8E8E8;strokeColor=#888888;fontColor=#333333;" value="СВОЁ / RPA" vertex="1">
+          <mxGeometry height="28" width="250" x="580" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="h_leg" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;arcSize=8;fillColor=#333333;strokeColor=#333333;fontColor=#FFFFFF;" value="Обозначения" vertex="1">
+          <mxGeometry height="28" width="270" x="880" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="hand1" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#D9EAD3;strokeColor=#548235;fontColor=#274E13;" value="1. TikTok Creative Center — офиц. тренды" vertex="1">
+          <mxGeometry height="42" width="250" x="20" y="76" as="geometry" />
+        </mxCell>
+        <mxCell id="hand2" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#D9EAD3;strokeColor=#548235;fontColor=#274E13;" value="2. Лента TikTok / Reels / Shorts" vertex="1">
+          <mxGeometry height="42" width="250" x="20" y="126" as="geometry" />
+        </mxCell>
+        <mxCell id="hand3" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#D9EAD3;strokeColor=#548235;fontColor=#274E13;" value="3. Tokboard — трендовые звуки" vertex="1">
+          <mxGeometry height="42" width="250" x="20" y="176" as="geometry" />
+        </mxCell>
+        <mxCell id="hand4" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#F4CCCC;strokeColor=#CC0000;fontColor=#7A1010;" value="4. Trendpop / Trendtok — тренд-аналитика" vertex="1">
+          <mxGeometry height="42" width="250" x="20" y="226" as="geometry" />
+        </mxCell>
+        <mxCell id="api1" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#D9EAD3;strokeColor=#548235;fontColor=#274E13;" value="1. yt-dlp — качает по ссылке (open-source)" vertex="1">
+          <mxGeometry height="42" width="250" x="300" y="76" as="geometry" />
+        </mxCell>
+        <mxCell id="api2" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#FFF2CC;strokeColor=#BF9000;fontColor=#5C4400;" value="2. Apify — готовые скраперы, $5 free" vertex="1">
+          <mxGeometry height="42" width="250" x="300" y="126" as="geometry" />
+        </mxCell>
+        <mxCell id="api3" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#FFF2CC;strokeColor=#BF9000;fontColor=#5C4400;" value="3. EnsembleData — 7 дней free, без карты" vertex="1">
+          <mxGeometry height="42" width="250" x="300" y="176" as="geometry" />
+        </mxCell>
+        <mxCell id="api4" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#F4CCCC;strokeColor=#CC0000;fontColor=#7A1010;" value="4. ScrapeBadger — 22 эндпоинта" vertex="1">
+          <mxGeometry height="42" width="250" x="300" y="226" as="geometry" />
+        </mxCell>
+        <mxCell id="api5" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#F4CCCC;strokeColor=#CC0000;fontColor=#7A1010;" value="5. ScrapFly — скрапинг + прокси" vertex="1">
+          <mxGeometry height="42" width="250" x="300" y="276" as="geometry" />
+        </mxCell>
+        <mxCell id="api6" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#FFF2CC;strokeColor=#BF9000;fontColor=#5C4400;" value="6. ⚠ TikTok Research API — офиц., закрыт для коммерции" vertex="1">
+          <mxGeometry height="42" width="250" x="300" y="326" as="geometry" />
+        </mxCell>
+        <mxCell id="own1" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#D9EAD3;strokeColor=#548235;fontColor=#274E13;" value="1. Self-host скрапер (open-source)" vertex="1">
+          <mxGeometry height="42" width="250" x="580" y="76" as="geometry" />
+        </mxCell>
+        <mxCell id="own2" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#FCE5CD;strokeColor=#B45309;fontColor=#5C2A00;" value="2. ⚠ Свой RPA-бот — риск блока, хрупко" vertex="1">
+          <mxGeometry height="42" width="250" x="580" y="126" as="geometry" />
+        </mxCell>
+        <mxCell id="leg1" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#D9EAD3;strokeColor=#548235;fontColor=#274E13;" value="Бесплатно" vertex="1">
+          <mxGeometry height="38" width="270" x="880" y="76" as="geometry" />
+        </mxCell>
+        <mxCell id="leg2" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#FFF2CC;strokeColor=#BF9000;fontColor=#5C4400;" value="Бесплатный тир / триал" vertex="1">
+          <mxGeometry height="38" width="270" x="880" y="122" as="geometry" />
+        </mxCell>
+        <mxCell id="leg3" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#F4CCCC;strokeColor=#CC0000;fontColor=#7A1010;" value="Платно" vertex="1">
+          <mxGeometry height="38" width="270" x="880" y="168" as="geometry" />
+        </mxCell>
+        <mxCell id="leg4" parent="varRef" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#FCE5CD;strokeColor=#B45309;fontColor=#5C2A00;" value="⚠ Риск / ограничения" vertex="1">
+          <mxGeometry height="38" width="270" x="880" y="214" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ref" edge="1" parent="1" source="b1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=open;dashed=1;strokeColor=#999999;fontSize=11;fontColor=#666666;" target="varRef" value="поиск референса">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="appPanel" parent="1" style="rounded=1;whiteSpace=wrap;html=1;container=1;collapsible=0;verticalAlign=top;fontSize=14;fontStyle=1;spacingTop=6;arcSize=3;dashed=1;fillColor=#EAF1FB;strokeColor=#3D6FB4;fontColor=#1F3A5F;" value="Приложение «Сборщик референсов» — локальное  (бренд = параметр; REVYLINE — лишь пример профиля)" vertex="1">
+          <mxGeometry height="580" width="440" x="2120" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ap1" parent="appPanel" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#FFFFFF;strokeColor=#3D6FB4;fontColor=#1F3A5F;" value="1 · Настройки — токен (локально) + фильтры: язык · неделя · вертикаль · ≤60с · мин. просмотры" vertex="1">
+          <mxGeometry height="74" width="400" x="20" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ap2" parent="appPanel" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#FFFFFF;strokeColor=#3D6FB4;fontColor=#1F3A5F;" value="2 · Источники — ключевик · авторы (по @имени) · хэштеги · звуки · платформы (TikTok / Reels / YouTube)" vertex="1">
+          <mxGeometry height="74" width="400" x="20" y="124" as="geometry" />
+        </mxCell>
+        <mxCell id="ap3" parent="appPanel" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#FFFFFF;strokeColor=#3D6FB4;fontColor=#1F3A5F;" value="3 · База-таблица (локально) — ссылка · автор · просмотры · дата · хэштеги · звук · статус" vertex="1">
+          <mxGeometry height="74" width="400" x="20" y="208" as="geometry" />
+        </mxCell>
+        <mxCell id="ap4" parent="appPanel" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;arcSize=10;fillColor=#FFFFFF;strokeColor=#3D6FB4;fontColor=#1F3A5F;" value="4 · Действия — Отбор (ты) → Скачать (yt-dlp) → Разбор (whisper + LLM)" vertex="1">
+          <mxGeometry height="74" width="400" x="20" y="292" as="geometry" />
+        </mxCell>
+        <mxCell id="ap5" parent="appPanel" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;fontStyle=1;arcSize=10;fillColor=#FFF2CC;strokeColor=#BF9000;fontColor=#5C4400;" value="Профиль бренда (универсальный) — твои правила адаптации: персонажи, тон, обход модерации. Несколько профилей; REVYLINE лишь один из них" vertex="1">
+          <mxGeometry height="86" width="400" x="20" y="378" as="geometry" />
+        </mxCell>
+        <mxCell id="ap6" parent="appPanel" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fontSize=11;fontStyle=2;arcSize=10;fillColor=#F5F5F5;strokeColor=#999999;fontColor=#555555;" value="Как работает: вставил токен → задал нишу и фильтры → «Обновить» тянет тренды в таблицу → отметил → скачал и разобрал. Сменил профиль — тот же конвейер под любой проект." vertex="1">
+          <mxGeometry height="86" width="400" x="20" y="472" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a12" edge="1" parent="appPanel" source="ap1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=open;strokeColor=#3D6FB4;" target="ap2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a23" edge="1" parent="appPanel" source="ap2" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=open;strokeColor=#3D6FB4;" target="ap3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a34" edge="1" parent="appPanel" source="ap3" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=open;strokeColor=#3D6FB4;" target="ap4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_varapp" edge="1" parent="1" source="h_api" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=open;dashed=1;strokeColor=#3D6FB4;fontSize=11;fontColor=#3D6FB4;" target="appPanel" value="оформить в приложение">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

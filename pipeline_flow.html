@@ -1,0 +1,196 @@
+<meta charset="utf-8">
+<title>Конвейер ИИ-видео — блок-схема</title>
+<style>
+  :root{
+    --ground:#0e1116; --panel:#161c25; --panel2:#1c2531; --line:#2a3441;
+    --ink:#eaeef2; --ink-dim:#a9b6c4; --muted:#7a8798;
+    --amber:#e9a23b; --amber-dim:#b9781a; --sky:#5fb4d4; --sky-dim:#3f95b6;
+    --yes:#57bd8a; --no:#e08a6b;
+    --shadow:0 1px 0 rgba(255,255,255,.03), 0 14px 40px -16px rgba(0,0,0,.6);
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:light){
+    :root{
+      --ground:#eef1f5; --panel:#ffffff; --panel2:#f5f7fa; --line:#dde3ea;
+      --ink:#161c24; --ink-dim:#44515f; --muted:#6a7683;
+      --amber:#b4740f; --amber-dim:#96600b; --sky:#2c88a8; --sky-dim:#237091;
+      --yes:#2f9366; --no:#c26a45;
+      --shadow:0 1px 0 rgba(255,255,255,.6), 0 16px 40px -20px rgba(20,30,45,.25);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0e1116; --panel:#161c25; --panel2:#1c2531; --line:#2a3441;
+    --ink:#eaeef2; --ink-dim:#a9b6c4; --muted:#7a8798;
+    --amber:#e9a23b; --amber-dim:#b9781a; --sky:#5fb4d4; --sky-dim:#3f95b6;
+    --yes:#57bd8a; --no:#e08a6b;
+    --shadow:0 1px 0 rgba(255,255,255,.03), 0 14px 40px -16px rgba(0,0,0,.6);
+  }
+  :root[data-theme="light"]{
+    --ground:#eef1f5; --panel:#ffffff; --panel2:#f5f7fa; --line:#dde3ea;
+    --ink:#161c24; --ink-dim:#44515f; --muted:#6a7683;
+    --amber:#b4740f; --amber-dim:#96600b; --sky:#2c88a8; --sky-dim:#237091;
+    --yes:#2f9366; --no:#c26a45;
+    --shadow:0 1px 0 rgba(255,255,255,.6), 0 16px 40px -20px rgba(20,30,45,.25);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--ink); font-family:var(--sans);
+    -webkit-font-smoothing:antialiased; line-height:1.5}
+  .page{max-width:600px; margin:0 auto; padding:44px 20px 72px}
+
+  .head{display:flex; align-items:flex-start; gap:14px; margin-bottom:34px}
+  .head .t{flex:1}
+  .eyebrow{font-family:var(--mono); text-transform:uppercase; letter-spacing:.16em;
+    font-size:11px; color:var(--muted); margin-bottom:8px}
+  h1{margin:0; font-size:26px; letter-spacing:-.01em; text-wrap:balance}
+  .sub{margin:8px 0 0; color:var(--ink-dim); font-size:14px}
+  .toggle{font-family:var(--mono); font-size:12px; cursor:pointer; color:var(--ink-dim);
+    background:var(--panel2); border:1px solid var(--line); border-radius:999px; padding:6px 12px}
+  .toggle:hover{color:var(--ink)}
+
+  /* spine */
+  .flow{display:flex; flex-direction:column; align-items:stretch; gap:0}
+
+  .block{position:relative; background:var(--panel); border:1px solid var(--line);
+    border-radius:16px; padding:18px 18px 16px 20px; box-shadow:var(--shadow);
+    border-left:4px solid var(--amber)}
+  .block .bh{display:flex; align-items:center; gap:12px; margin-bottom:12px}
+  .num{font-family:var(--mono); font-weight:700; font-size:15px; color:var(--ground);
+    background:var(--amber); width:30px; height:30px; border-radius:9px;
+    display:grid; place-items:center; flex:none}
+  .block h2{margin:0; font-size:18px; letter-spacing:-.01em}
+  .block .tag{margin-left:auto; font-family:var(--mono); font-size:10.5px; text-transform:uppercase;
+    letter-spacing:.1em; color:var(--muted)}
+
+  ul.items{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+  ul.items li{position:relative; padding-left:16px; font-size:14px; color:var(--ink-dim)}
+  ul.items li:before{content:""; position:absolute; left:0; top:9px; width:6px; height:6px;
+    border-radius:50%; background:var(--amber); opacity:.7}
+  ul.items li b{color:var(--ink); font-weight:600}
+  .hint{margin-top:11px; font-size:12.5px; color:var(--sky); background:color-mix(in srgb,var(--sky) 10%, transparent);
+    border-radius:9px; padding:9px 11px; display:flex; gap:8px}
+  .hint .m{font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--sky); white-space:nowrap; padding-top:1px}
+
+  /* connector */
+  .arrow{align-self:center; width:2px; height:30px; background:linear-gradient(var(--line),var(--amber));
+    position:relative; margin:2px 0}
+  .arrow:after{content:""; position:absolute; bottom:-1px; left:50%; transform:translateX(-50%);
+    border-left:6px solid transparent; border-right:6px solid transparent; border-top:8px solid var(--amber)}
+
+  /* ---- branch inside block 1 ---- */
+  .decision{background:var(--panel2); border:1px dashed var(--sky); border-radius:12px;
+    padding:14px; margin-bottom:4px}
+  .qrow{display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:12px}
+  .qrow .q{font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--sky)}
+  .qrow .qt{font-size:15px; font-weight:600}
+  .paths{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  @media (max-width:460px){ .paths{grid-template-columns:1fr} }
+  .path{border-radius:11px; padding:12px; border:1px solid var(--line); background:var(--panel)}
+  .path .lbl{font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.04em;
+    display:inline-flex; align-items:center; gap:6px; margin-bottom:7px}
+  .path.no .lbl{color:var(--no)} .path.yes .lbl{color:var(--yes)}
+  .path .lbl:before{content:""; width:8px; height:8px; border-radius:50%}
+  .path.no .lbl:before{background:var(--no)} .path.yes .lbl:before{background:var(--yes)}
+  .path p{margin:0; font-size:13px; color:var(--ink-dim)}
+  .merge{margin-top:12px; display:flex; align-items:center; gap:10px; justify-content:center;
+    background:color-mix(in srgb,var(--yes) 12%, transparent); border-radius:10px; padding:11px 12px}
+  .merge .c{color:var(--yes); font-weight:700; font-size:16px; flex:none}
+  .merge span{font-size:13.5px; color:var(--ink)}
+
+  footer{margin-top:40px; text-align:center; font-family:var(--mono); font-size:11.5px; color:var(--muted)}
+  @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+
+<div class="page">
+  <div class="head">
+    <div class="t">
+      <p class="eyebrow">Производство коротких ИИ-роликов · 9:16</p>
+      <h1>Блок-схема конвейера</h1>
+      <p class="sub">От идеи до публикации — пять шагов. В начале развилка: есть готовый референс или нет.</p>
+    </div>
+    <button class="toggle" id="themeBtn" aria-label="Сменить тему">◐ тема</button>
+  </div>
+
+  <div class="flow">
+
+    <!-- 1 -->
+    <div class="block">
+      <div class="bh"><span class="num">1</span><h2>Подготовка / сценарий</h2><span class="tag">старт</span></div>
+      <div class="decision">
+        <div class="qrow"><span class="q">развилка</span><span class="qt">Есть референс?</span></div>
+        <div class="paths">
+          <div class="path no">
+            <span class="lbl">НЕТ</span>
+            <p>Идёшь искать референс — вирусный ролик-образец в TikTok / Reels.</p>
+          </div>
+          <div class="path yes">
+            <span class="lbl">ДА</span>
+            <p>Описать его, разбить на кадры и написать диалоги — взять что есть и адаптировать под себя.</p>
+          </div>
+        </div>
+        <div class="merge"><span class="c">✓</span><span><b>На выходе:</b> готовый сценарий по сценам с диалогами</span></div>
+      </div>
+    </div>
+
+    <div class="arrow"></div>
+
+    <!-- 2 -->
+    <div class="block">
+      <div class="bh"><span class="num">2</span><h2>Изображение</h2><span class="tag">кадры</span></div>
+      <ul class="items">
+        <li>Для всех сцен генерируются <b>кадры</b></li>
+        <li>Уже готовые первые кадры <b>прикрепляются как референсы</b> к следующим</li>
+      </ul>
+      <div class="hint"><span class="m">зачем</span><span>чтобы не было визуальных расхождений — персонажи и сцены остаются одинаковыми</span></div>
+    </div>
+
+    <div class="arrow"></div>
+
+    <!-- 3 -->
+    <div class="block">
+      <div class="bh"><span class="num">3</span><h2>Анимация</h2><span class="tag">видео</span></div>
+      <ul class="items">
+        <li><b>Промты анимации</b> — как оживить каждый кадр</li>
+        <li><b>Сама анимация</b> — кадры превращаются в озвученные видео-клипы</li>
+      </ul>
+    </div>
+
+    <div class="arrow"></div>
+
+    <!-- 4 -->
+    <div class="block">
+      <div class="bh"><span class="num">4</span><h2>Монтаж</h2><span class="tag">сборка</span></div>
+      <ul class="items">
+        <li>Убираются <b>лишние паузы</b> между репликами</li>
+        <li><b>Субтитры</b> — по 1–2 слова за раз, не целыми предложениями</li>
+        <li><b>Музыка</b> — накладывается уже в самой соцсети</li>
+        <li><b>Обложка</b> — генерируется отдельно или берётся лучший кадр</li>
+      </ul>
+    </div>
+
+    <div class="arrow"></div>
+
+    <!-- 5 -->
+    <div class="block">
+      <div class="bh"><span class="num">5</span><h2>Публикация</h2><span class="tag">выпуск</span></div>
+      <ul class="items">
+        <li>Выкладка во <b>все соцсети</b></li>
+        <li>Выбираются <b>описание, музыка, обложка</b> → публикация</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <footer>от идеи до публикации · один вертикальный ролик</footer>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement, btn=document.getElementById('themeBtn');
+  function cur(){ var t=root.getAttribute('data-theme');
+    return t || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); }
+  btn.addEventListener('click',function(){ root.setAttribute('data-theme', cur()==='dark'?'light':'dark'); });
+})();
+</script>

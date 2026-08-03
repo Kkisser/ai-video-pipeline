@@ -3,14 +3,17 @@
   APIFY_TOKEN=... python3 -m refcollector.web
 """
 from __future__ import annotations
-import html, os, urllib.parse, urllib.request, webbrowser
+import html, os, threading, urllib.parse, urllib.request, webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from . import db, collect as collect_mod, download as dl_mod, suggested
+from . import db, collect as collect_mod, download as dl_mod, suggested, keys
 
 PORT = 8770
-TOKEN = os.environ.get("APIFY_TOKEN", "")
 ACCENT = "#6d5cf0"
+
+
+def apify_tok():
+    return keys.get("apify", "APIFY_TOKEN")
 
 # --- иконки (SVG) ---
 def _svg(inner, size=22, sw=1.7):
@@ -96,6 +99,8 @@ select{padding:0 14px} .icobtn{width:46px;display:grid;place-items:center}
 .schip{padding:7px 13px;border-radius:999px;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface2);color:var(--text)}
 .schip:hover{border-color:var(--accent);color:var(--accent)}
 .schip.au{border-color:color-mix(in oklab,var(--accent) 30%,var(--line))}
+.poolbtn{padding:9px 16px;border-radius:999px;font-size:13px;font-weight:700;background:var(--accent);color:#fff;display:inline-flex;align-items:center;gap:8px}
+.poolbtn:hover{filter:brightness(1.08);color:#fff}
 .status{position:absolute;right:10px;top:10px;padding:5px 11px;border-radius:999px;font-size:12px;font-weight:700;color:#fff;z-index:2}
 .dur{position:absolute;right:10px;bottom:10px;padding:4px 9px;border-radius:9px;background:rgba(10,10,16,.72);color:#fff;font-size:12px;font-weight:700}
 .body{padding:16px;display:flex;flex-direction:column;gap:12px}
@@ -125,6 +130,14 @@ select{padding:0 14px} .icobtn{width:46px;display:grid;place-items:center}
 .toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);z-index:20;padding:12px 20px;border-radius:14px;
  background:var(--text);color:var(--bg);font-size:14px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.28)}
 .warnp{padding:4px 10px;border-radius:8px;background:#5a2a2a;color:#f5b;font-size:12px;font-weight:700}
+/* панель ключей */
+.keysbar{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px}
+.keyrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.kname{font-weight:700;font-size:14px;min-width:110px}
+.klink{font-size:13px;font-weight:600;white-space:nowrap}
+.keyrow input{flex:1 1 260px;min-width:180px;height:40px;padding:0 12px;border:1px solid var(--line);border-radius:11px;background:var(--bg);color:var(--text);font-size:13px;font-family:'JetBrains Mono',monospace}
+.kstat{font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap}
+.ksave{align-self:flex-start;height:40px;padding:0 18px;border:none;border-radius:11px;background:var(--accent);color:#fff;font-size:14px;font-weight:700}
 """
 
 JS = r"""
@@ -144,6 +157,25 @@ JS = r"""
  };
 })();
 """
+
+_pool = {"running": False}
+
+
+def _pool_worker(profile, days):
+    """Собрать свежие видео всех авторов пула (в фоне, чтобы не блокировать браузер)."""
+    _pool["running"] = True
+    tok = apify_tok()
+    try:
+        for pl, h in suggested.AUTHORS:
+            plat = "reels" if pl == "instagram" else "tiktok"
+            try:
+                collect_mod.collect(plat, "author", h, token=tok, profile=profile,
+                                    n=20, days=days, max_sec=60)
+            except Exception:
+                pass
+    finally:
+        _pool["running"] = False
+
 
 STATUS_COLORS = {"new": "#8a8a95", "picked": ACCENT, "downloaded": "#2f9e6a", "analyzed": "#c48a1c"}
 STATUS_LABEL = {"new": "новый", "picked": "выбран", "downloaded": "скачан", "analyzed": "разобран"}
@@ -203,10 +235,40 @@ def render(profile, sort="views", msg=""):
     au = "".join(_schip(f"suggest('{pl}','author','{h}')", "@" + h, "au") for pl, h in suggested.AUTHORS)
     tg = "".join(_schip(f"suggest('tiktok','hashtag','{t}')", "#" + t) for t in suggested.HASHTAGS)
     ph = "".join(_schip(f"suggest('tiktok','keyword','{p}')", p) for p in suggested.PHRASES)
+    pfq = urllib.parse.quote(profile or "default")
     sugg = (f'<div class="sugg">'
+            f'<div class="sgroup"><a class="poolbtn" href="/collect_pool?profile={pfq}">⚡ За последнюю неделю — все авторы</a>'
+            f'<span class="slabel" style="min-width:auto;text-transform:none">свежие ролики всех авторов пула одним кликом</span></div>'
             f'<div class="sgroup"><span class="slabel">Авторы</span>{au}</div>'
             f'<div class="sgroup"><span class="slabel">Хэштеги</span>{tg}</div>'
             f'<div class="sgroup"><span class="slabel">Фразы</span>{ph}</div></div>')
+
+    # выбор количества роликов за раз
+    for v, lbl in [("10", "10 видео"), ("20", "20"), ("30", "30"), ("50", "50")]:
+        chips += _radio("n", v, "30", "chip", lbl, "chipwrap")
+
+    # панель ключей + остаток
+    tok = apify_tok()
+    rem = keys.apify_remaining(tok) if tok else None
+    if rem:
+        ap_stat = f'✓ осталось ≈ {rem["videos"]:,} видео  (${rem["remaining_usd"]:.2f} из ${rem["limit"]:.0f}/мес)'
+    elif tok:
+        ap_stat = '✓ ключ задан'
+    else:
+        ap_stat = '— не задан'
+    ed_stat = '✓ задан (лимит смотри в кабинете)' if keys.get("ensembledata") else '— не задан'
+    keysbar = (
+        f'<form class="keysbar" method="post" action="/save_key">'
+        f'<input type="hidden" name="profile" value="{html.escape(profile or "default")}">'
+        f'<div class="keyrow"><span class="kname">Apify</span>'
+        f'<a class="klink" href="{keys.LINKS["apify"]}" target="_blank">получить ключ ↗</a>'
+        f'<input name="apify_key" placeholder="apify_api_… (вставь, чтобы задать/сменить)">'
+        f'<span class="kstat">{ap_stat}</span></div>'
+        f'<div class="keyrow"><span class="kname">EnsembleData</span>'
+        f'<a class="klink" href="{keys.LINKS["ensembledata"]}" target="_blank">получить ключ ↗</a>'
+        f'<input name="eddata_key" placeholder="ключ EnsembleData">'
+        f'<span class="kstat">{ed_stat}</span></div>'
+        f'<button class="ksave" type="submit">Сохранить ключи</button></form>')
 
     # карточки
     cards = []
@@ -262,7 +324,7 @@ def render(profile, sort="views", msg=""):
    <button class="act p" formaction="/parse">{_svg(IC["parse"])}Разобрать выбранные</button>
  </div></form>''' if rows else ""
 
-    warn = "" if TOKEN else '<span class="warnp">нет APIFY_TOKEN</span>'
+    warn = "" if apify_tok() else '<span class="warnp">ключ Apify не задан</span>'
     toast = f'<div class="toast">{html.escape(msg)}</div>' if msg else ""
     pf = html.escape(profile or "default")
 
@@ -281,8 +343,9 @@ def render(profile, sort="views", msg=""):
      <button class="icobtn" onclick="toggleTheme()" title="Сменить тему">◐</button>
    </div>
  </div>
+ {keysbar}
  <form class="card2" method="post" action="/collect">
-   <input type="hidden" name="profile" value="{pf}"><input type="hidden" name="n" value="30">
+   <input type="hidden" name="profile" value="{pf}">
    <div class="plats">{plats}</div>
    <div class="row2">
      <div class="seg">{types}</div>
@@ -358,6 +421,13 @@ class H(BaseHTTPRequestHandler):
             row = c.execute("SELECT * FROM refs WHERE id=?", (int(q["id"][0]),)).fetchone()
             msg = "Скачано" if (row and dl_mod.download_ref(c, row)) else "Не удалось скачать"
             c.close(); return self._redirect(profile, msg)
+        if u.path == "/collect_pool":
+            if not apify_tok():
+                return self._redirect(profile, "Нет APIFY_TOKEN")
+            if _pool["running"]:
+                return self._redirect(profile, "Сбор пула уже идёт — обнови через минуту")
+            threading.Thread(target=_pool_worker, args=(profile, 7), daemon=True).start()
+            return self._redirect(profile, f"Собираю свежие видео {len(suggested.AUTHORS)} авторов за неделю — обнови через 2–3 мин")
         if u.path == "/parse_one":
             return self._redirect(profile, "Разбор (whisper+LLM) — следующий шаг, пока не подключён")
         self._html(render(profile, q.get("sort", ["views"])[0], q.get("msg", [""])[0]))
@@ -366,13 +436,21 @@ class H(BaseHTTPRequestHandler):
         u = urllib.parse.urlparse(self.path)
         flat, multi = self._form()
         profile = flat.get("profile", "revyline")
+        if u.path == "/save_key":
+            ak = flat.get("apify_key", "").strip()
+            ek = flat.get("eddata_key", "").strip()
+            if ak:
+                keys.save("apify", ak)
+            if ek:
+                keys.save("ensembledata", ek)
+            return self._redirect(profile, "Ключи сохранены" if (ak or ek) else "Пусто — вставь ключ")
         if u.path == "/collect":
-            if not TOKEN:
+            if not apify_tok():
                 return self._redirect(profile, "Нет APIFY_TOKEN")
             try:
                 r = collect_mod.collect(
                     flat.get("platform", "tiktok"), flat.get("type", "keyword"), flat["value"],
-                    token=TOKEN, profile=profile, n=int(flat.get("n", 30)),
+                    token=apify_tok(), profile=profile, n=int(flat.get("n", 30)),
                     days=int(flat.get("days", 0)), max_sec=int(flat.get("max_sec", 0)),
                     vertical="vertical" in flat, min_views=int(flat.get("min_views", 0)))
                 msg = f"Собрано: {r['got']} → фильтры → {r['kept']} → новых {r['new']}"
@@ -399,8 +477,8 @@ def run():
     db.conn().close()
     srv = HTTPServer(("127.0.0.1", PORT), H)
     print(f"Панель: http://127.0.0.1:{PORT}  (Ctrl+C — стоп)")
-    if not TOKEN:
-        print("ВНИМАНИЕ: APIFY_TOKEN не задан — сбор не будет работать.")
+    if not apify_tok():
+        print("ВНИМАНИЕ: ключ Apify не задан (env APIFY_TOKEN или в панели) — сбор не будет работать.")
     try:
         webbrowser.open(f"http://127.0.0.1:{PORT}")
     except Exception:

@@ -80,6 +80,15 @@ select{padding:0 14px} .icobtn{width:46px;display:grid;place-items:center}
 .platwrap,.typewrap,.chipwrap{display:inline-flex}
 .chip{display:inline-flex;align-items:center;line-height:1;padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;border:1px solid var(--line);background:transparent;color:var(--muted);transition:all .16s;white-space:nowrap}
 .clbl{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-right:2px}
+.mainrow{display:flex;gap:24px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.mgroup{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.chips.inline{margin-top:0}
+.nichebtn{width:100%;justify-content:center;height:58px;font-size:17px}
+.adv{margin-top:18px;border-top:1px dashed var(--line)}
+.adv>summary{cursor:pointer;font-size:14px;font-weight:700;color:var(--muted);padding:14px 0 6px;list-style:none}
+.adv>summary::-webkit-details-marker{display:none}
+.adv>summary:hover{color:var(--text)}
+.advbody{padding-top:6px}
 .chipwrap input:checked + .chip{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 12%,transparent);color:var(--accent)}
 /* results */
 .reshd{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:40px 0 18px}
@@ -179,6 +188,28 @@ def _pool_worker(profile, days):
         _pool["running"] = False
 
 
+_niche = {"running": False}
+
+
+def _niche_worker(profile, platform, n, days, max_sec, vertical, min_views):
+    """Найти популярное в нише: TikTok — по ядру хэштегов, Reels — по авторам-инста."""
+    _niche["running"] = True
+    tok = apify_tok()
+    try:
+        if platform == "reels":
+            sources = [("reels", "author", h) for pl, h in suggested.AUTHORS if pl == "instagram"]
+        else:
+            sources = [("tiktok", "hashtag", t) for t in suggested.NICHE]
+        for plat, typ, val in sources:
+            try:
+                collect_mod.collect(plat, typ, val, token=tok, profile=profile, n=n,
+                                    days=days, max_sec=max_sec, vertical=vertical, min_views=min_views)
+            except Exception:
+                pass
+    finally:
+        _niche["running"] = False
+
+
 STATUS_COLORS = {"new": "#8a8a95", "picked": ACCENT, "downloaded": "#2f9e6a", "analyzed": "#c48a1c"}
 STATUS_LABEL = {"new": "новый", "picked": "выбран", "downloaded": "скачан", "analyzed": "разобран"}
 
@@ -215,21 +246,21 @@ def render(profile, sort="views", msg=""):
     else:
         rows = sorted(rows, key=lambda r: r["views"] or 0, reverse=True)
 
-    # платформы
-    plats = "".join(_radio("platform", v, "tiktok", "plat",
-                    _svg(IC[v], 34) + f'<span>{lbl}</span>', "platwrap")
+    # компактная платформа (сегменты с иконкой)
+    plats = "".join(_radio("platform", v, "tiktok", "typ", _svg(IC[v], 18) + " " + lbl, "typewrap")
                     for v, lbl in [("tiktok", "TikTok"), ("reels", "Reels")])
     types = "".join(_radio("type", v, "keyword", "typ", lbl, "typewrap")
                     for v, lbl in [("keyword", "Фраза"), ("hashtag", "Хэштег"), ("author", "Автор")])
-    chips = ""
+    dayschips = "".join(_radio("days", v, "30", "chip", lbl, "chipwrap")
+                        for v, lbl in [("7", "7 дней"), ("30", "30 дней"), ("90", "90 дней"), ("0", "неважно")])
+    filterchips = ""
     for name, val, lbl, cur in [
-        ("days", "7", "7 дней", "30"), ("days", "30", "30 дней", "30"), ("days", "90", "90 дней", "30"),
         ("max_sec", "15", "≤ 15 сек", "60"), ("max_sec", "30", "≤ 30 сек", "60"), ("max_sec", "60", "≤ 60 сек", "60"),
         ("min_views", "10000", "от 10 тыс", "0"), ("min_views", "100000", "от 100 тыс", "0"),
         ("min_views", "1000000", "от 1 млн", "0")]:
-        chips += _radio(name, val, cur, "chip", lbl, "chipwrap")
-    chips += ('<label class="chipwrap"><input type="checkbox" name="vertical" value="1" checked>'
-              '<span class="chip">только вертикальные</span></label>')
+        filterchips += _radio(name, val, cur, "chip", lbl, "chipwrap")
+    filterchips += ('<label class="chipwrap"><input type="checkbox" name="vertical" value="1" checked>'
+                    '<span class="chip">только вертикальные</span></label>')
 
     # пул предложенных источников
     def _schip(onclick, label, cls=""):
@@ -348,15 +379,24 @@ def render(profile, sort="views", msg=""):
  {keysbar}
  <form class="card2" method="post" action="/collect">
    <input type="hidden" name="profile" value="{pf}">
-   <div class="plats">{plats}</div>
-   <div class="row2">
-     <div class="seg">{types}</div>
-     <div class="qbox">{_svg(IC["search"],24,1.8)}<input name="value" placeholder="кофе, латте-арт, стоматолог…" required></div>
-     <button class="find" type="submit">{_svg(IC["search"],22,2)}Найти</button>
+   <div class="mainrow">
+     <div class="seg">{plats}</div>
+     <div class="mgroup"><span class="clbl">Кол-во</span><div class="chips inline">{countchips}</div></div>
+     <div class="mgroup"><span class="clbl">Период</span><div class="chips inline">{dayschips}</div></div>
    </div>
-   <div class="chips">{chips}</div>
-   <div class="chips" style="margin-top:12px"><span class="clbl">Кол-во</span>{countchips}</div>
-   {sugg}
+   <button class="find nichebtn" type="submit" formaction="/collect_niche">{_svg(IC["search"],22,2)}Найти популярное в нише</button>
+   <details class="adv">
+     <summary>Расширенный поиск и источники ▾</summary>
+     <div class="advbody">
+       <div class="row2">
+         <div class="seg">{types}</div>
+         <div class="qbox">{_svg(IC["search"],24,1.8)}<input name="value" placeholder="стоматолог, зубная щётка, @автор…"></div>
+         <button class="find" type="submit">{_svg(IC["search"],20,2)}Найти по запросу</button>
+       </div>
+       <div class="chips">{filterchips}</div>
+       {sugg}
+     </div>
+   </details>
  </form>
  {body_results}
  </div>
@@ -447,6 +487,17 @@ class H(BaseHTTPRequestHandler):
             if ek:
                 keys.save("ensembledata", ek)
             return self._redirect(profile, "Ключи сохранены" if (ak or ek) else "Пусто — вставь ключ")
+        if u.path == "/collect_niche":
+            if not apify_tok():
+                return self._redirect(profile, "Нет ключа Apify — задай его выше")
+            if _niche["running"]:
+                return self._redirect(profile, "Поиск по нише уже идёт — обнови через минуту")
+            platform = flat.get("platform", "tiktok")
+            threading.Thread(target=_niche_worker, args=(
+                profile, platform, int(flat.get("n", 30)), int(flat.get("days", 0)),
+                int(flat.get("max_sec", 60)), "vertical" in flat, int(flat.get("min_views", 0))
+            ), daemon=True).start()
+            return self._redirect(profile, f"Ищу популярное в нише ({platform}) — обнови через 1–2 мин")
         if u.path == "/collect":
             if not apify_tok():
                 return self._redirect(profile, "Нет APIFY_TOKEN")

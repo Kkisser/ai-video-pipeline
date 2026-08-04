@@ -3,7 +3,7 @@
   APIFY_TOKEN=... python3 -m refcollector.web
 """
 from __future__ import annotations
-import html, os, threading, urllib.parse, urllib.request, webbrowser
+import hashlib, html, os, threading, urllib.parse, urllib.request, webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from . import db, collect as collect_mod, download as dl_mod, suggested, keys
@@ -89,6 +89,13 @@ select{padding:0 14px} .icobtn{width:46px;display:grid;place-items:center}
 .adv>summary::-webkit-details-marker{display:none}
 .adv>summary:hover{color:var(--text)}
 .advbody{padding-top:6px}
+.platrow{display:flex;justify-content:center;margin-bottom:18px}
+.btnrow{display:flex;gap:12px;flex-wrap:wrap}
+.nichebtn{flex:1 1 340px}
+.nichebtn2{flex:0 1 260px;height:58px;background:var(--surface2);color:var(--text);border:1px solid var(--line);justify-content:center}
+.nichebtn2:hover{filter:none;border-color:var(--accent);color:var(--accent)}
+.clearbtn{font-size:13px;font-weight:700;color:#d64545;border:1px solid var(--line);border-radius:11px;padding:9px 14px;background:transparent}
+.clearbtn:hover{border-color:#d64545}
 .chipwrap input:checked + .chip{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 12%,transparent);color:var(--accent)}
 /* results */
 .reshd{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:40px 0 18px}
@@ -196,7 +203,12 @@ def _niche_worker(profile, platform, n, days, max_sec, vertical, min_views):
     _niche["running"] = True
     tok = apify_tok()
     try:
-        if platform == "reels":
+        if platform == "all":
+            sources = ([("tiktok", "hashtag", t) for t in suggested.NICHE]
+                       + [("youtube", "keyword", t) for t in suggested.NICHE])
+        elif platform == "youtube":
+            sources = [("youtube", "keyword", t) for t in suggested.NICHE]
+        elif platform == "reels":
             sources = [("reels", "author", h) for pl, h in suggested.AUTHORS if pl == "instagram"]
         else:
             sources = [("tiktok", "hashtag", t) for t in suggested.NICHE]
@@ -248,17 +260,16 @@ def render(profile, sort="views", msg=""):
 
     # компактная платформа (сегменты с иконкой)
     plats = "".join(_radio("platform", v, "tiktok", "typ", _svg(IC[v], 18) + " " + lbl, "typewrap")
-                    for v, lbl in [("tiktok", "TikTok"), ("reels", "Reels")])
+                    for v, lbl in [("tiktok", "TikTok"), ("youtube", "Shorts"), ("reels", "Reels")])
     types = "".join(_radio("type", v, "keyword", "typ", lbl, "typewrap")
                     for v, lbl in [("keyword", "Фраза"), ("hashtag", "Хэштег"), ("author", "Автор")])
     dayschips = "".join(_radio("days", v, "30", "chip", lbl, "chipwrap")
                         for v, lbl in [("7", "7 дней"), ("30", "30 дней"), ("90", "90 дней"), ("0", "неважно")])
-    filterchips = ""
-    for name, val, lbl, cur in [
-        ("max_sec", "15", "≤ 15 сек", "60"), ("max_sec", "30", "≤ 30 сек", "60"), ("max_sec", "60", "≤ 60 сек", "60"),
-        ("min_views", "10000", "от 10 тыс", "0"), ("min_views", "100000", "от 100 тыс", "0"),
-        ("min_views", "1000000", "от 1 млн", "0")]:
-        filterchips += _radio(name, val, cur, "chip", lbl, "chipwrap")
+    minchips = "".join(_radio("min_views", v, "500000", "chip", lbl, "chipwrap")
+                       for v, lbl in [("0", "любые"), ("100000", "от 100к"),
+                                      ("500000", "от 500к"), ("1000000", "от 1 млн")])
+    filterchips = "".join(_radio("max_sec", v, "60", "chip", lbl, "chipwrap")
+                          for v, lbl in [("15", "≤ 15 сек"), ("30", "≤ 30 сек"), ("60", "≤ 60 сек")])
     filterchips += ('<label class="chipwrap"><input type="checkbox" name="vertical" value="1" checked>'
                     '<span class="chip">только вертикальные</span></label>')
 
@@ -339,11 +350,13 @@ def render(profile, sort="views", msg=""):
 
     body_results = f'''<div class="reshd">
    <h2>{len(rows)} роликов · профиль {html.escape(profile or "default")}</h2>
+   <div style="display:flex;gap:10px;align-items:center">
+   <a class="clearbtn" href="/clear_base?profile={pfq}" onclick="return confirm('Удалить все ролики из базы этого профиля?')">Очистить базу</a>
    <select onchange="go('sort',this.value)">
      <option value="views"{" selected" if sort=="views" else ""}>Сортировка: просмотры</option>
      <option value="likes"{" selected" if sort=="likes" else ""}>Сортировка: лайки</option>
      <option value="date"{" selected" if sort=="date" else ""}>Сортировка: дата</option>
-   </select></div>
+   </select></div></div>
  <div class="grid">{"".join(cards)}</div>''' if rows else f'''<div class="empty">
    <div class="big">{_svg(IC["search"],66,1.5)}</div>
    <h3>Найди первые референсы</h3>
@@ -379,12 +392,16 @@ def render(profile, sort="views", msg=""):
  {keysbar}
  <form class="card2" method="post" action="/collect">
    <input type="hidden" name="profile" value="{pf}">
+   <div class="platrow"><div class="seg">{plats}</div></div>
    <div class="mainrow">
-     <div class="seg">{plats}</div>
      <div class="mgroup"><span class="clbl">Кол-во</span><div class="chips inline">{countchips}</div></div>
      <div class="mgroup"><span class="clbl">Период</span><div class="chips inline">{dayschips}</div></div>
+     <div class="mgroup"><span class="clbl">Просмотры</span><div class="chips inline">{minchips}</div></div>
    </div>
-   <button class="find nichebtn" type="submit" formaction="/collect_niche">{_svg(IC["search"],22,2)}Найти популярное в нише</button>
+   <div class="btnrow">
+     <button class="find nichebtn" type="submit" formaction="/collect_niche">{_svg(IC["search"],22,2)}Найти популярное в нише</button>
+     <button class="find nichebtn2" type="submit" formaction="/collect_niche" name="mode" value="all">TikTok + Shorts · вся ниша</button>
+   </div>
    <details class="adv">
      <summary>Расширенный поиск и источники ▾</summary>
      <div class="advbody">
@@ -435,20 +452,33 @@ class H(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(b))); self.end_headers(); self.wfile.write(b); return
         if u.path == "/thumb":
             src = urllib.parse.unquote(q.get("url", [""])[0])
-            try:
-                req = urllib.request.Request(src, headers={
-                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-                    "Referer": "https://www.tiktok.com/"})
-                with urllib.request.urlopen(req, timeout=15) as resp:
-                    data = resp.read()
-                    ctype = resp.headers.get("Content-Type", "image/jpeg")
-                self.send_response(200); self.send_header("Content-Type", ctype)
-                self.send_header("Cache-Control", "max-age=86400")
-                self.send_header("Content-Length", str(len(data))); self.end_headers()
-                self.wfile.write(data)
-            except Exception:
-                self.send_response(404); self.end_headers()
+            if not src:
+                self.send_response(404); self.end_headers(); return
+            cache = db.DATA_DIR / "thumbs"; cache.mkdir(exist_ok=True)
+            fn = cache / hashlib.md5(src.encode()).hexdigest()
+            data = fn.read_bytes() if fn.exists() else None
+            if data is None:
+                try:
+                    req = urllib.request.Request(src, headers={
+                        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+                        "Referer": "https://www.tiktok.com/"})
+                    with urllib.request.urlopen(req, timeout=15) as resp:
+                        data = resp.read()
+                    fn.write_bytes(data)  # кэш на диск — обложка больше не «протухнет»
+                except Exception:
+                    data = None
+            if not data:
+                self.send_response(404); self.end_headers(); return
+            ctype = ("image/webp" if data[:4] == b"RIFF" else
+                     "image/png" if data[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg")
+            self.send_response(200); self.send_header("Content-Type", ctype)
+            self.send_header("Cache-Control", "max-age=604800")
+            self.send_header("Content-Length", str(len(data))); self.end_headers()
+            self.wfile.write(data)
             return
+        if u.path == "/clear_base":
+            c = db.conn(); nrem = db.clear_all(c, profile); c.close()
+            return self._redirect(profile, f"База очищена — удалено {nrem}")
         if u.path == "/file":
             from pathlib import Path
             p = Path(urllib.parse.unquote(q.get("path", [""])[0])).resolve()
@@ -492,7 +522,7 @@ class H(BaseHTTPRequestHandler):
                 return self._redirect(profile, "Нет ключа Apify — задай его выше")
             if _niche["running"]:
                 return self._redirect(profile, "Поиск по нише уже идёт — обнови через минуту")
-            platform = flat.get("platform", "tiktok")
+            platform = "all" if flat.get("mode") == "all" else flat.get("platform", "tiktok")
             threading.Thread(target=_niche_worker, args=(
                 profile, platform, int(flat.get("n", 30)), int(flat.get("days", 0)),
                 int(flat.get("max_sec", 60)), "vertical" in flat, int(flat.get("min_views", 0))

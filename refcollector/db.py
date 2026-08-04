@@ -49,8 +49,9 @@ CREATE TABLE IF NOT EXISTS refs (
 
 def conn(path: Path = DB_PATH) -> sqlite3.Connection:
     ensure_dirs()
-    c = sqlite3.connect(path)
+    c = sqlite3.connect(path, timeout=10)
     c.row_factory = sqlite3.Row
+    c.execute("PRAGMA busy_timeout=8000")  # ждать блокировку, а не падать
     c.executescript(SCHEMA)
     # миграция для старых баз без колонки cover
     try:
@@ -89,6 +90,15 @@ def list_refs(c: sqlite3.Connection, profile: str | None = None,
         q += " WHERE " + " AND ".join(where)
     q += " ORDER BY views DESC LIMIT ?"; args.append(limit)
     return c.execute(q, args).fetchall()
+
+
+def clear_all(c: sqlite3.Connection, profile: str | None = None) -> int:
+    if profile:
+        cur = c.execute("DELETE FROM refs WHERE profile=?", (profile,))
+    else:
+        cur = c.execute("DELETE FROM refs")
+    c.commit()
+    return cur.rowcount
 
 
 def set_status(c: sqlite3.Connection, ref_id: int, status: str) -> None:

@@ -4,10 +4,41 @@
 Источники: keyword | hashtag | author.
 """
 from __future__ import annotations
-import json, urllib.request
+import json, subprocess, urllib.request
 from datetime import date, timedelta
+from pathlib import Path
 
 from . import db
+
+YTDLP = str(Path(__file__).resolve().parent.parent / "flowbatch" / ".venv" / "bin" / "yt-dlp")
+
+
+def _youtube_rows(value: str, n: int, days: int) -> list[dict]:
+    """Поиск на YouTube через yt-dlp (быстро, flat). Превью строим из id ролика.
+
+    days/вертикаль для YouTube не фильтруются (flat не отдаёт дату/размеры) —
+    для Shorts ориентируемся на длительность и просмотры.
+    """
+    cmd = [YTDLP, f"ytsearch{n}:{value}", "--flat-playlist", "--no-warnings", "--ignore-errors",
+           "--print", "%(view_count)s\t%(duration)s\t%(uploader)s\t%(id)s\t%(title)s"]
+    out = subprocess.run(cmd, capture_output=True, text=True).stdout
+    rows = []
+    for line in out.splitlines():
+        p = line.split("\t")
+        if len(p) != 5:
+            continue
+        views, dur, uploader, vid, title = p
+        if not vid or vid == "NA":
+            continue
+        rows.append({
+            "platform": "youtube", "url": f"https://www.youtube.com/watch?v={vid}",
+            "author": uploader.strip(), "text": title.strip(),
+            "views": int(views) if views.isdigit() else 0, "likes": 0, "comments": 0,
+            "date": "", "duration": int(dur) if dur.isdigit() else 0,
+            "width": 0, "height": 0, "hashtags": "", "sound": "",
+            "cover": f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg",
+        })
+    return rows
 
 ACTORS = {
     "tiktok": "clockworks~tiktok-scraper",
@@ -92,7 +123,23 @@ def _reels_row(it: dict) -> dict:
 def collect(platform: str, source_type: str, value: str, *, token: str,
             profile: str = "default", n: int = 30, days: int = 0, max_sec: int = 0,
             vertical: bool = False, min_views: int = 0) -> dict:
-    """platform: tiktok | reels. source_type: keyword | hashtag | author."""
+    """platform: tiktok | reels | youtube. source_type: keyword | hashtag | author."""
+    if platform == "youtube":
+        rows_raw = _youtube_rows(value, n, days)
+        c = db.conn()
+        kept = new = 0
+        for row in rows_raw:
+            if max_sec and not (0 < row["duration"] <= max_sec):
+                continue
+            # вертикаль для YouTube не определяем (flat не отдаёт размеры) — не фильтруем
+            if min_views and (row["views"] or 0) < min_views:
+                continue
+            row["profile"] = profile
+            row["source"] = f"youtube/{source_type}:{value}"
+            new += int(db.upsert(c, row))
+            kept += 1
+        c.close()
+        return {"got": len(rows_raw), "kept": kept, "new": new}
     if platform not in ACTORS:
         raise ValueError(f"неизвестная платформа: {platform}")
     if platform == "tiktok":

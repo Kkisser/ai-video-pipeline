@@ -106,6 +106,12 @@ def set_status(c: sqlite3.Connection, ref_id: int, status: str) -> None:
     c.commit()
 
 
+def set_analysis(c: sqlite3.Connection, ref_id: int, transcript: str, analysis: str) -> None:
+    c.execute("UPDATE refs SET transcript=?, analysis=?, status='analyzed' WHERE id=?",
+              (transcript, analysis, ref_id))
+    c.commit()
+
+
 def counts(c: sqlite3.Connection) -> dict:
     rows = c.execute("SELECT status, COUNT(*) n FROM refs GROUP BY status").fetchall()
     return {r["status"]: r["n"] for r in rows}

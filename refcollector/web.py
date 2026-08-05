@@ -3,10 +3,10 @@
   APIFY_TOKEN=... python3 -m refcollector.web
 """
 from __future__ import annotations
-import hashlib, html, os, threading, urllib.parse, urllib.request, webbrowser
+import hashlib, html, json, os, threading, urllib.parse, urllib.request, webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from . import db, collect as collect_mod, download as dl_mod, suggested, keys
+from . import db, collect as collect_mod, download as dl_mod, suggested, keys, models, analyze as analyze_mod
 
 PORT = 8770
 ACCENT = "#6d5cf0"
@@ -96,6 +96,19 @@ select{padding:0 14px} .icobtn{width:46px;display:grid;place-items:center}
 .nichebtn2:hover{filter:none;border-color:var(--accent);color:var(--accent)}
 .clearbtn{font-size:13px;font-weight:700;color:#d64545;border:1px solid var(--line);border-radius:11px;padding:9px 14px;background:transparent}
 .clearbtn:hover{border-color:#d64545}
+.sub{font-size:12.5px;color:var(--muted)}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(10,10,16,.55);display:flex;align-items:flex-start;justify-content:center;padding:60px 20px;backdrop-filter:blur(3px)}
+.mcard{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px;max-width:520px;width:100%;box-shadow:var(--shadow)}
+.mcard h3{margin:0 0 8px;font-size:20px}
+.mrow{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;cursor:pointer}
+.mrow input{margin-top:3px}
+.mrow:has(input:checked){border-color:var(--accent);background:color-mix(in oklab,var(--accent) 8%,transparent)}
+.minst{padding:14px;border:1px solid var(--line);border-radius:12px;font-size:14px}
+.rbz{margin-top:6px;border-top:1px solid var(--line);padding-top:6px}
+.rbz>summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--accent);list-style:none}
+.rbz>summary::-webkit-details-marker{display:none}
+.rbzb{padding-top:8px;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.scn{padding:6px 8px;background:var(--surface2);border-radius:8px;line-height:1.35}
 .chipwrap input:checked + .chip{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 12%,transparent);color:var(--accent)}
 /* results */
 .reshd{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:40px 0 18px}
@@ -222,6 +235,37 @@ def _niche_worker(profile, platform, n, days, max_sec, vertical, min_views):
         _niche["running"] = False
 
 
+_parse = {"running": False}
+
+
+def _parse_worker(profile, ids, tag):
+    """Разобрать список роликов: докачать при необходимости → whisper+VLM → база."""
+    _parse["running"] = True
+    try:
+        for i in ids:
+            c = db.conn()
+            row = c.execute("SELECT * FROM refs WHERE id=?", (i,)).fetchone()
+            if row and not row["file"]:
+                try:
+                    dl_mod.download_ref(c, row)
+                    row = c.execute("SELECT * FROM refs WHERE id=?", (i,)).fetchone()
+                except Exception:
+                    pass
+            if row and row["file"]:
+                try:
+                    analyze_mod.analyze_video(c, row, tag)
+                except Exception:
+                    pass
+            c.close()
+    finally:
+        _parse["running"] = False
+
+
+def _install_and_parse(profile, ids, tag):
+    models.ensure_stack(tag)
+    _parse_worker(profile, ids, tag)
+
+
 STATUS_COLORS = {"new": "#8a8a95", "picked": ACCENT, "downloaded": "#2f9e6a", "analyzed": "#c48a1c"}
 STATUS_LABEL = {"new": "новый", "picked": "выбран", "downloaded": "скачан", "analyzed": "разобран"}
 
@@ -246,7 +290,29 @@ def _radio(name, value, cur, cls, label_html, wrapcls):
             f'<span class="{cls}">{label_html}</span></label>')
 
 
-def render(profile, sort="views", msg=""):
+def _analysis_block(r):
+    """Блок «Разбор ▾» в карточке для разобранного ролика."""
+    if (r["status"] or "") != "analyzed" or not r["analysis"]:
+        return ""
+    try:
+        a = json.loads(r["analysis"])
+    except Exception:
+        return ""
+    scenes = ""
+    for s in (a.get("scenes") or [])[:12]:
+        dlg = " · ".join(f'{d.get("who","")}: {d.get("text","")}' for d in (s.get("dialogue") or []))
+        scenes += (f'<div class="scn"><b>{html.escape(str(s.get("n","")))}. '
+                   f'{html.escape(str(s.get("time","")))}</b> {html.escape(str(s.get("action","")))}'
+                   + (f'<br><span class="sub">{html.escape(dlg)}</span>' if dlg else "") + '</div>')
+    return (f'<details class="rbz"><summary>Разбор ▾</summary><div class="rbzb">'
+            f'<div class="sub"><b>Хук:</b> {html.escape(str(a.get("hook","")))}</div>'
+            f'<div class="sub"><b>Формула:</b> {html.escape(str(a.get("formula","")))}</div>'
+            f'{scenes}'
+            f'<div class="sub"><b>Почему залетел:</b> {html.escape(str(a.get("why_viral","")))}</div>'
+            f'<a href="/analysis_json?id={r["id"]}" target="_blank">Скачать JSON</a></div></details>')
+
+
+def render(profile, sort="views", msg="", panel="", ids=""):
     c = db.conn()
     rows = db.db_all(c, profile)
     cnt = db.counts(c)
@@ -345,6 +411,7 @@ def render(profile, sort="views", msg=""):
      <a class="ico" href="{dl_link}" title="Скачать">{_svg(IC["dl"],21,1.8)}</a>
      <a class="parse" href="{parse_link}">{_svg(IC["parse"],20,1.8)}Разобрать</a>
    </div>
+   {_analysis_block(r)}
  </div>
 </div>''')
 
@@ -374,9 +441,36 @@ def render(profile, sort="views", msg=""):
     toast = f'<div class="toast">{html.escape(msg)}</div>' if msg else ""
     pf = html.escape(profile or "default")
 
+    modal = ""
+    if panel == "models":
+        st = os.statvfs(str(db.DATA_DIR))
+        free_gb = st.f_bavail * st.f_frsize / 1e9
+        if models.INSTALL["running"]:
+            inner = (f'<div class="minst">⏳ {html.escape(models.INSTALL["msg"] or "Устанавливаю…")}'
+                     f'<br><span class="sub">Обнови страницу через минуту — разбор начнётся сам.</span></div>')
+        else:
+            mrows = ""
+            for m in models.MODELS:
+                ch = " checked" if m["rec"] else ""
+                star = " ⭐" if m["rec"] else ""
+                mrows += (f'<label class="mrow"><input type="radio" name="tag" value="{m["tag"]}"{ch}>'
+                          f'<span><b>{m["label"]}{star}</b> · {m["size"]}<br>'
+                          f'<span class="sub">{m["note"]}</span></span></label>')
+            inner = (f'<form method="post" action="/install_model">'
+                     f'<input type="hidden" name="profile" value="{pf}">'
+                     f'<input type="hidden" name="ids" value="{html.escape(ids)}">'
+                     f'{mrows}<button class="find" type="submit" style="height:48px;margin-top:10px;width:100%;justify-content:center">'
+                     f'Установить и разобрать</button></form>')
+        modal = (f'<div class="modal"><div class="mcard"><h3>Локальная модель для разбора</h3>'
+                 f'<p class="sub">Разбор идёт офлайн на твоём Mac (whisper уже есть). Нужно один раз '
+                 f'поставить Ollama и модель — дальше без интернета. Свободно на диске: <b>{free_gb:.0f} ГБ</b>.</p>'
+                 f'{inner}<a class="sub" href="/?profile={urllib.parse.quote(profile or "default")}" '
+                 f'style="display:inline-block;margin-top:12px">✕ закрыть</a></div></div>')
+
     return f'''<!doctype html><html lang=ru><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
 <title>Сборщик референсов</title><style>{CSS}</style></head><body><div class="wrap">
+ {modal}
  <div class="head">
    <div class="brand"><div class="logo">{_svg(IC["logo"],26,1.8)}</div>
      <div><h1>Сборщик референсов</h1><div class="s">локальная база вирусных вертикалок · {cnt or "пусто"} {warn}</div></div></div>
@@ -501,9 +595,26 @@ class H(BaseHTTPRequestHandler):
                 return self._redirect(profile, "Сбор пула уже идёт — обнови через минуту")
             threading.Thread(target=_pool_worker, args=(profile, 7), daemon=True).start()
             return self._redirect(profile, f"Собираю свежие видео {len(suggested.AUTHORS)} авторов за неделю — обнови через 2–3 мин")
+        if u.path == "/analysis_json":
+            p = analyze_mod.ANALYSIS_DIR / f"{int(q['id'][0]):04d}.json"
+            if p.exists():
+                b = p.read_bytes()
+                self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(b))); self.end_headers(); self.wfile.write(b)
+            else:
+                self.send_response(404); self.end_headers()
+            return
         if u.path == "/parse_one":
-            return self._redirect(profile, "Разбор (whisper+LLM) — следующий шаг, пока не подключён")
-        self._html(render(profile, q.get("sort", ["views"])[0], q.get("msg", [""])[0]))
+            rid = int(q["id"][0]); tag = q.get("tag", [models.DEFAULT_TAG])[0]
+            if _parse["running"]:
+                return self._redirect(profile, "Разбор уже идёт — обнови через пару минут")
+            if not models.model_ready(tag):
+                loc = f"/?profile={urllib.parse.quote(profile)}&panel=models&ids={rid}"
+                self.send_response(303); self.send_header("Location", loc); self.end_headers(); return
+            threading.Thread(target=_parse_worker, args=(profile, [rid], tag), daemon=True).start()
+            return self._redirect(profile, "Разбираю ролик (whisper + Qwen)… обнови через 1–3 мин")
+        self._html(render(profile, q.get("sort", ["views"])[0], q.get("msg", [""])[0],
+                          q.get("panel", [""])[0], q.get("ids", [""])[0]))
 
     def do_POST(self):
         u = urllib.parse.urlparse(self.path)
@@ -552,8 +663,24 @@ class H(BaseHTTPRequestHandler):
             r = dl_mod.download_picked(profile)
             return self._redirect(profile, f"Скачано {r['downloaded']} из {r['picked']}")
         if u.path == "/parse":
-            ids = multi.get("ids", [])
-            return self._redirect(profile, f"Разбор {len(ids)} шт. — следующий шаг (whisper+LLM), пока не подключён")
+            ids = [int(i) for i in multi.get("ids", [])]
+            if not ids:
+                return self._redirect(profile, "Сначала отметь ролики")
+            tag = flat.get("tag", models.DEFAULT_TAG)
+            if _parse["running"]:
+                return self._redirect(profile, "Разбор уже идёт — обнови позже")
+            if not models.model_ready(tag):
+                loc = f"/?profile={urllib.parse.quote(profile)}&panel=models&ids={','.join(map(str, ids))}"
+                self.send_response(303); self.send_header("Location", loc); self.end_headers(); return
+            threading.Thread(target=_parse_worker, args=(profile, ids, tag), daemon=True).start()
+            return self._redirect(profile, f"Разбираю {len(ids)} роликов… обнови позже")
+        if u.path == "/install_model":
+            tag = flat.get("tag", models.DEFAULT_TAG)
+            ids = [int(i) for i in flat.get("ids", "").split(",") if i.strip().isdigit()]
+            if models.INSTALL["running"] or _parse["running"]:
+                return self._redirect(profile, "Установка/разбор уже идут — обнови позже")
+            threading.Thread(target=_install_and_parse, args=(profile, ids, tag), daemon=True).start()
+            return self._redirect(profile, "Ставлю модель и разбираю — обнови через несколько минут")
         self.send_response(404); self.end_headers()
 
 
